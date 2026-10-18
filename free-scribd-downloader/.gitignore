@@ -1,0 +1,16 @@
+
+# Free Scribd Downloader: private/generated files
+**/.env
+**/.env.*
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/dist/
+**/release/
+**/node_modules/
+**/*.pdf
+**/*.log
+**/runtime/
+**/build/*.spec
+**/build/FreeScribdDownloader/
+**/build/FSDWorker/

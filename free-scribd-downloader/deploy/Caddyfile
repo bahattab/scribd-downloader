@@ -1,0 +1,9 @@
+{$SITE_DOMAIN} {
+    basic_auth {
+        downloader {$EB_AUTH_HASH}
+    }
+    reverse_proxy 127.0.0.1:3080 {
+        header_up Host {$SITE_DOMAIN}
+        header_up X-EB-Gateway {$EB_GATEWAY_TOKEN}
+    }
+}

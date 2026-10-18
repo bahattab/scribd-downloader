@@ -1,0 +1,10 @@
+import {createApp} from './server.mjs';
+const publicOrigin=process.env.EB_PUBLIC_ORIGIN;
+const gatewayToken=process.env.EB_GATEWAY_TOKEN;
+if(!publicOrigin)throw new Error('Set EB_PUBLIC_ORIGIN to the public HTTPS origin.');
+const port=Number(process.env.PORT||3080);
+if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid PORT');
+const app=createApp({publicOrigin,gatewayToken});
+app.requestTimeout=60000;app.headersTimeout=10000;
+app.on('error',error=>{console.error('[startup]',error);process.exitCode=1;});
+app.listen(port,'127.0.0.1',()=>console.log(`EB Docs web backend: 127.0.0.1:${port}`));

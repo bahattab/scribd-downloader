@@ -1,0 +1,82 @@
+name: Free Scribd Downloader builds
+on:
+  push:
+    branches: [main]
+    paths: ['free-scribd-downloader/**', '.github/workflows/free-scribd-downloader.yml', 'README.md']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: free-scribd-downloader
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependencies
+        run: python -m pip install -r build/requirements.txt
+      - name: Source tests
+        run: node --test
+      - name: Python tests
+        run: python -m unittest discover -s test -p "test_*.py"
+      - name: Build and smoke test bundled runtime
+        run: python build_release.py
+      - name: Test Windows installer and installed application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem release/*-Setup.exe | Select-Object -First 1
+          $target = Join-Path $env:RUNNER_TEMP 'FSD-Install-Check'
+          $setup = Start-Process -FilePath $installer.FullName -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$target`"") -WindowStyle Hidden -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw 'Installer failed' }
+          $report = Join-Path $env:RUNNER_TEMP 'fsd-installed-check.json'
+          $app = Start-Process -FilePath (Join-Path $target 'FreeScribdDownloader.exe') -ArgumentList @('--self-test',"`"$report`"") -WindowStyle Hidden -Wait -PassThru
+          if ($app.ExitCode -ne 0 -or !(Test-Path -LiteralPath $report)) { throw 'Installed app failed' }
+          if (!(Get-Content -LiteralPath $report -Raw | ConvertFrom-Json).ok) { throw 'Installed smoke check failed' }
+          $uninstall = Start-Process -FilePath (Join-Path $target 'unins000.exe') -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -WindowStyle Hidden -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw 'Uninstaller failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fsd-${{ runner.os }}-${{ runner.arch }}
+          path: free-scribd-downloader/release/*
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fsd-*
+          path: release-assets
+          merge-multiple: true
+      - name: Publish distinct build release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        shell: bash
+        run: |
+          version=$(node -p "require('./free-scribd-downloader/package.json').version")
+          tag="v${version}-build.${BUILD_NUMBER}"
+          gh release create "$tag" release-assets/* --target "$RELEASE_COMMIT" --title "Free Scribd Downloader ${tag}" --notes-file free-scribd-downloader/CHANGELOG.md --prerelease
