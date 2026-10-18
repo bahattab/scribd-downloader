@@ -80,3 +80,8 @@ https://github.com/themrsami/scribd-downloader
 https://pyinstaller.org/en/stable/
 https://jrsoftware.org/ishelp/
 https://github.com/GoogleChromeLabs/chrome-for-testing
+
+
+## تحذير Windows Protected Your PC
+
+الإصدار 0.5.0 غير موقَّع؛ قد يظهر Unknown publisher وتحذير SmartScreen. تجهيز التوقيع موثَّق في WINDOWS-SIGNING.md، ويتطلّب شهادة موثوقة وهوية ناشر متحقَّقًا منها. إضافة مسار التوقيع لا تعني أنَّ الإصدار القديم أصبح موقَّعًا، والتوقيع لا يضمن اختفاء التحذير فورًا.
