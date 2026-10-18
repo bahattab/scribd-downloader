@@ -17,6 +17,11 @@ VERSION=json.loads((ROOT/'package.json').read_text())['version']
 
 def run(args):subprocess.run([str(x) for x in args],cwd=ROOT,check=True)
 
+def sign_windows(path):
+    thumbprint=os.environ.get('FSD_SIGN_CERT_SHA1')
+    if os.name=='nt' and thumbprint:
+        run(['powershell.exe','-NoProfile','-File',ROOT/'build'/'Sign-Windows-File.ps1','-CertificateThumbprint',thumbprint,'-FileToSign',path])
+
 def download(url,target):
     if not url.startswith(('https://googlechromelabs.github.io/','https://storage.googleapis.com/chrome-for-testing-public/')):raise ValueError('Unexpected browser distribution URL')
     with urlopen(url,timeout=120) as response,open(target,'wb') as output:shutil.copyfileobj(response,output)
@@ -70,6 +75,8 @@ def main():
     for filename in ['README.md','THIRD-PARTY-NOTICES.md','PRIVACY.md','CHANGELOG.md']:shutil.copy2(ROOT/filename,app/filename)
     # Metadata contains versions only; no host environment or personal paths.
     (app/'BUNDLE-VERSIONS.json').write_text(json.dumps({'app':VERSION,'node':node_version,'chrome':stable['version'],'os':sys.platform,'arch':platform.machine()},indent=2))
+    sign_windows(app/('FreeScribdDownloader'+extension))
+    sign_windows(runtime/'worker'/('FSDWorker'+extension))
     report=ROOT/'dist'/'bundle-self-test.json'
     run([app/('FreeScribdDownloader'+extension),'--self-test',report])
     if not json.loads(report.read_text())['ok']:raise RuntimeError('Bundle smoke test failed')
@@ -80,6 +87,7 @@ def main():
     if os.name=='nt':
         compiler=shutil.which('iscc') or str(Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Inno Setup 6'/'ISCC.exe')
         run([compiler,'/DAppVersion='+VERSION,ROOT/'build'/'installer.iss'])
+        sign_windows(release/f'Free-Scribd-Downloader-{VERSION}-Windows-Setup.exe')
     for artifact in release.iterdir():
         if artifact.suffix!='.sha256':artifact.with_name(artifact.name+'.sha256').write_text(hashlib.sha256(artifact.read_bytes()).hexdigest()+'  '+artifact.name+'\n')
 
