@@ -49,7 +49,7 @@ jobs:
           if (!(Get-Content -LiteralPath $report -Raw | ConvertFrom-Json).ok) { throw 'Installed smoke check failed' }
           $uninstall = Start-Process -FilePath (Join-Path $target 'unins000.exe') -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -WindowStyle Hidden -Wait -PassThru
           if ($uninstall.ExitCode -ne 0) { throw 'Uninstaller failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: fsd-${{ runner.os }}-${{ runner.arch }}
           path: free-scribd-downloader/release/*
