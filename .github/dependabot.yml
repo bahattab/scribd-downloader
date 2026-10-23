@@ -1,0 +1,19 @@
+# Dependabot version updates: npm and pip manifests in free-scribd-downloader, plus GitHub Actions workflows.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/free-scribd-downloader"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/free-scribd-downloader"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/free-scribd-downloader/build"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
